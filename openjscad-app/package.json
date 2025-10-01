@@ -17,6 +17,7 @@
     "vite": "^7.1.7"
   },
   "dependencies": {
+    "@jscad/io": "^2.4.12",
     "@jscad/modeling": "^2.12.6"
   }
 }

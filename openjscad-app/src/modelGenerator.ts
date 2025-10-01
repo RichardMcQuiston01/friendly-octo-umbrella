@@ -7,29 +7,48 @@ const { subtract } = booleans;
 export function generateHollowBox(params: BoxParameters) {
   const { wallThickness, layerHeight, boxWidth, boxDepth, boxHeight } = params;
 
-  // Ensure minimum wall thickness and layer height for 3D printing
-  const minWallThickness = Math.max(wallThickness, layerHeight * 2);
+  // Calculate the actual box height as closest multiple of layer height without going over
+  const layerCount = Math.floor(boxHeight / layerHeight);
+  const actualBoxHeight = layerCount * layerHeight;
 
-  // Create outer box
+  // Create outer box (the main rectangular box)
   const outerBox = cuboid({
-    size: [boxWidth, boxDepth, boxHeight],
-    center: [0, 0, 0]
+    size: [boxWidth, boxDepth, actualBoxHeight],
+    center: [0, 0, actualBoxHeight / 2] // Center the box with bottom at z=0
   });
 
-  // Create inner cavity (subtract wall thickness from all sides)
-  const innerWidth = Math.max(0.1, boxWidth - (minWallThickness * 2));
-  const innerDepth = Math.max(0.1, boxDepth - (minWallThickness * 2));
-  const innerHeight = Math.max(0.1, boxHeight - minWallThickness); // Open top
+  // Calculate inner cavity dimensions
+  const innerWidth = boxWidth - (2 * wallThickness);
+  const innerDepth = boxDepth - (2 * wallThickness);
+  const innerHeight = actualBoxHeight - wallThickness; // Remove material from top, keep bottom wall
 
+  // Ensure inner dimensions are positive
+  if (innerWidth <= 0 || innerDepth <= 0 || innerHeight <= 0) {
+    throw new Error('Wall thickness is too large for the given box dimensions');
+  }
+
+  // Create inner cavity (cut from the top)
   const innerBox = cuboid({
     size: [innerWidth, innerDepth, innerHeight],
-    center: [0, 0, minWallThickness / 2] // Offset to create bottom wall
+    center: [0, 0, wallThickness + (innerHeight / 2)] // Offset by wall thickness from bottom
   });
 
-  // Create hollow box by subtracting inner from outer
+  // Create hollow box by subtracting inner cavity from outer box
   const hollowBox = subtract(outerBox, innerBox);
 
-  return hollowBox;
+  return {
+    geometry: hollowBox,
+    actualDimensions: {
+      width: boxWidth,
+      depth: boxDepth,
+      height: actualBoxHeight,
+      wallThickness: wallThickness,
+      layerCount: layerCount,
+      innerWidth: innerWidth,
+      innerDepth: innerDepth,
+      innerHeight: innerHeight
+    }
+  };
 }
 
 export function validateParameters(params: BoxParameters): string[] {
@@ -41,6 +60,10 @@ export function validateParameters(params: BoxParameters): string[] {
 
   if (params.layerHeight <= 0) {
     errors.push('Layer height must be greater than 0');
+  }
+
+  if (params.nozzleSize <= 0) {
+    errors.push('Nozzle size must be greater than 0');
   }
 
   if (params.boxWidth <= 0) {
@@ -65,6 +88,11 @@ export function validateParameters(params: BoxParameters): string[] {
 
   if (params.wallThickness >= params.boxHeight) {
     errors.push('Wall thickness is too large for box height');
+  }
+
+  // Validate nozzle size relationship to wall thickness
+  if (params.wallThickness < params.nozzleSize) {
+    errors.push('Wall thickness should be at least equal to nozzle size for proper printing');
   }
 
   return errors;

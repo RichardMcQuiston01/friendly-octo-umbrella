@@ -1,6 +1,7 @@
 export interface BoxParameters {
   wallThickness: number;
   layerHeight: number;
+  nozzleSize: number;
   boxWidth: number;
   boxDepth: number;
   boxHeight: number;

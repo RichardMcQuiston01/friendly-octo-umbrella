@@ -1,3 +1,138 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fallback styles for better readability */
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure form inputs are always visible */
+input[type="number"] {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  color: #111827;
+  width: 140px;
+  max-width: 140px;
+}
+
+input[type="number"]:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-color: #3b82f6;
+}
+
+/* Button fallback styles */
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #3b82f6;
+  color: white;
+}
+
+button:hover {
+  background-color: #2563eb;
+}
+
+/* Container fallback */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Form field fallback */
+.form-field {
+  margin-bottom: 12px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Table layout improvements */
+table {
+  border-collapse: collapse;
+}
+
+td {
+  vertical-align: top;
+}
+
+/* Container padding */
+body {
+  padding: 0 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  tr {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+  }
+
+  td {
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    padding-left: 50%;
+  }
+}
+
+/* Canvas styles */
+canvas {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
+}
+
+/* Unit label styles */
+.unit-label {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e5e7eb;
+  font-size: 11px !important;
+  font-weight: 500;
+  color: #6b7280 !important;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+/* Ensure input text is always readable */
+input[type="number"]:focus {
+  background-color: white !important;
+  color: #111827 !important;
+  z-index: 1;
+}
+
+/* Improve input field positioning */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}

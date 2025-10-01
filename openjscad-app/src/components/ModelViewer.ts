@@ -1,3 +1,4 @@
+import { stlSerializer } from '@jscad/io';
 import type { BoxParameters } from '../types';
 import { generateHollowBox, validateParameters } from '../modelGenerator';
 
@@ -14,12 +15,7 @@ export class ModelViewer {
 
   private setupViewer(): void {
     this.container.innerHTML = '';
-    this.container.className = 'bg-gray-50 rounded-lg shadow-lg p-6 flex flex-col h-full min-h-[500px]';
-
-    // Title
-    const title = document.createElement('h2');
-    title.className = 'text-xl font-bold text-gray-800 mb-4';
-    title.textContent = '3D Model Preview';
+    this.container.className = 'flex flex-col h-full min-h-[400px]';
 
     // Canvas container
     const canvasContainer = document.createElement('div');
@@ -50,7 +46,6 @@ export class ModelViewer {
     controls.appendChild(downloadButton);
 
     canvasContainer.appendChild(this.canvas);
-    this.container.appendChild(title);
     this.container.appendChild(canvasContainer);
     this.container.appendChild(controls);
 
@@ -109,7 +104,7 @@ export class ModelViewer {
     this.ctx.fillText('Update parameters to generate model', centerX, centerY + height/2 + 50);
   }
 
-  private drawModel(params: BoxParameters): void {
+  private drawModel(params: BoxParameters, actualDimensions?: any): void {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Draw background
@@ -119,12 +114,18 @@ export class ModelViewer {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
 
+    // Use actual dimensions if provided, otherwise fall back to input parameters
+    const displayWidth = actualDimensions?.width || params.boxWidth;
+    const displayHeight = actualDimensions?.height || params.boxHeight;
+    const displayDepth = actualDimensions?.depth || params.boxDepth;
+    const displayWallThickness = actualDimensions?.wallThickness || params.wallThickness;
+
     // Scale the box proportionally to canvas
-    const scale = Math.min(200 / Math.max(params.boxWidth, params.boxDepth, params.boxHeight), 3);
-    const width = params.boxWidth * scale;
-    const height = params.boxHeight * scale;
-    const depth = params.boxDepth * scale;
-    const wallThickness = params.wallThickness * scale;
+    const scale = Math.min(200 / Math.max(displayWidth, displayDepth, displayHeight), 3);
+    const width = displayWidth * scale;
+    const height = displayHeight * scale;
+    const depth = displayDepth * scale;
+    const wallThickness = displayWallThickness * scale;
 
     // Draw outer box
     // Front face
@@ -179,22 +180,34 @@ export class ModelViewer {
     this.ctx.textAlign = 'center';
 
     // Width label
-    this.ctx.fillText(`W: ${params.boxWidth}mm`, centerX, centerY + height/2 + 20);
+    this.ctx.fillText(`W: ${displayWidth}mm`, centerX, centerY + height/2 + 20);
 
-    // Height label
+    // Height label (show actual calculated height if different from input)
     this.ctx.save();
     this.ctx.translate(centerX - width/2 - 15, centerY);
     this.ctx.rotate(-Math.PI/2);
-    this.ctx.fillText(`H: ${params.boxHeight}mm`, 0, 0);
+    const formattedHeight = parseFloat(displayHeight).toFixed(2);
+    const heightText = displayHeight !== params.boxHeight ?
+      `H: ${formattedHeight}mm (${actualDimensions?.layerCount || 0} layers)` :
+      `H: ${formattedHeight}mm`;
+    this.ctx.fillText(heightText, 0, 0);
     this.ctx.restore();
 
     // Depth label
-    this.ctx.fillText(`D: ${params.boxDepth}mm`, centerX + width/2 + depth/6, centerY - height/2 - depth/8);
+    this.ctx.fillText(`D: ${displayDepth}mm`, centerX + width/2 + depth/6, centerY - height/2 - depth/8);
 
-    // Wall thickness indicator
+    // Wall thickness and nozzle size
     this.ctx.fillStyle = '#ef4444';
     this.ctx.font = '10px Arial';
-    this.ctx.fillText(`Wall: ${params.wallThickness}mm`, centerX, centerY + height/2 + 35);
+    this.ctx.fillText(`Wall: ${displayWallThickness}mm | Nozzle: ${params.nozzleSize}mm`, centerX, centerY + height/2 + 35);
+
+    if (actualDimensions) {
+      this.ctx.fillStyle = '#10b981';
+      const innerWidth = parseFloat(actualDimensions.innerWidth).toFixed(2);
+      const innerDepth = parseFloat(actualDimensions.innerDepth).toFixed(2);
+      const innerHeight = parseFloat(actualDimensions.innerHeight).toFixed(2);
+      this.ctx.fillText(`Inner: ${innerWidth}×${innerDepth}×${innerHeight}mm`, centerX, centerY + height/2 + 50);
+    }
   }
 
   public updateModel(params: BoxParameters): void {
@@ -206,8 +219,9 @@ export class ModelViewer {
     }
 
     try {
-      this.currentModel = generateHollowBox(params);
-      this.drawModel(params);
+      const modelResult = generateHollowBox(params);
+      this.currentModel = modelResult.geometry;
+      this.drawModel(params, modelResult.actualDimensions);
     } catch (error) {
       this.drawError([`Model generation failed: ${error}`]);
     }
@@ -236,8 +250,33 @@ export class ModelViewer {
       return;
     }
 
-    // For now, show a message about exporting - would need @jscad/io package
-    alert('STL export functionality requires @jscad/io package. The 3D model has been generated and is ready for processing.');
+    try {
+      // Serialize the 3D model to STL format
+      const rawData = stlSerializer.serialize({ binary: false }, this.currentModel);
+
+      // Create a blob and download link
+      const blob = new Blob([rawData], { type: 'application/sla' });
+      const url = URL.createObjectURL(blob);
+
+      // Create a temporary download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hollow_box.stl';
+      a.style.display = 'none';
+
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('STL file exported successfully');
+    } catch (error) {
+      console.error('STL export failed:', error);
+      alert(`STL export failed: ${error}`);
+    }
   }
 
   private downloadModel(): void {
