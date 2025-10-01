@@ -8,12 +8,17 @@ class App {
     wallThickness: 1,
     layerHeight: 0.2,
     nozzleSize: 0.4,
+    edgeFillet: 0.4,
+    buildVolumeWidth: 220,
+    buildVolumeDepth: 220,
+    buildVolumeHeight: 220,
     boxWidth: 25.4,
     boxDepth: 25.4,
     boxHeight: 25.4
   };
 
   private parameterForm!: ParameterForm;
+  private machineSettingsForm!: ParameterForm;
   private modelViewer!: ModelViewer;
 
   constructor() {
@@ -36,10 +41,13 @@ class App {
           <table class="w-full">
             <thead>
               <tr class="bg-gray-50 border-b">
-                <th class="px-6 py-4 text-left text-lg font-semibold text-gray-800 w-1/2">
+                <th class="px-6 py-4 text-left text-lg font-semibold text-gray-800 w-1/3">
                   3D Box Parameters
                 </th>
-                <th class="px-6 py-4 text-left text-lg font-semibold text-gray-800 w-1/2">
+                <th class="px-6 py-4 text-left text-lg font-semibold text-gray-800 w-1/3">
+                  Machine Settings
+                </th>
+                <th class="px-6 py-4 text-left text-lg font-semibold text-gray-800 w-1/3">
                   3D Model Preview
                 </th>
               </tr>
@@ -48,6 +56,9 @@ class App {
               <tr>
                 <td class="px-6 py-6 align-top border-r border-gray-200">
                   <div id="parameter-form"></div>
+                </td>
+                <td class="px-6 py-6 align-top border-r border-gray-200">
+                  <div id="machine-settings"></div>
                 </td>
                 <td class="px-6 py-6 align-top">
                   <div id="model-viewer"></div>
@@ -64,7 +75,7 @@ class App {
             <a href="https://www.typescriptlang.org/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline">TypeScript</a>, and
             <a href="https://tailwindcss.com/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline">TailwindCSS</a>
           </p>
-          <p class="mt-2">Created using ClaudeAI by RichardMcQ01</p>
+          <p class="mt-2">Made by RichardMcQ01 using ClaudeAI</p>
         </footer>
       </div>
     `;
@@ -72,12 +83,21 @@ class App {
 
   private initializeComponents(): void {
     const formContainer = document.getElementById('parameter-form')!;
+    const machineSettingsContainer = document.getElementById('machine-settings')!;
     const viewerContainer = document.getElementById('model-viewer')!;
 
     this.parameterForm = new ParameterForm(
       formContainer,
       this.parameters,
-      (params) => this.onParametersChange(params)
+      (params) => this.onParametersChange(params),
+      ['wallThickness', 'boxWidth', 'boxDepth', 'boxHeight', 'edgeFillet']
+    );
+
+    this.machineSettingsForm = new ParameterForm(
+      machineSettingsContainer,
+      this.parameters,
+      (params) => this.onParametersChange(params),
+      ['nozzleSize', 'layerHeight', 'buildVolumeWidth', 'buildVolumeDepth', 'buildVolumeHeight']
     );
 
     this.modelViewer = new ModelViewer(viewerContainer);
@@ -88,12 +108,15 @@ class App {
 
   private onParametersChange(params: BoxParameters): void {
     this.parameters = { ...params };
+    this.parameterForm.updateParameters(this.parameters);
+    this.machineSettingsForm.updateParameters(this.parameters);
     this.modelViewer.updateModel(this.parameters);
   }
 
   public updateParameters(params: Partial<BoxParameters>): void {
     this.parameters = { ...this.parameters, ...params };
     this.parameterForm.updateParameters(this.parameters);
+    this.machineSettingsForm.updateParameters(this.parameters);
     this.modelViewer.updateModel(this.parameters);
   }
 }
